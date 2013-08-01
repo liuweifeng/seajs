@@ -3,15 +3,6 @@ module.exports = function(grunt) {
 
   var path = require("path")
 
-  const GCC_OPTIONS = {
-    compilation_level: "SIMPLE_OPTIMIZATIONS",
-    externs: "tools/extern.js",
-
-    warning_level: "VERBOSE",
-    jscomp_off: "checkTypes",
-    jscomp_error: "checkDebuggerStatement"
-  }
-
 
   grunt.initConfig({
     pkg: grunt.file.readJSON("package.json"),
@@ -23,7 +14,6 @@ module.exports = function(grunt) {
           "src/sea.js",
 
           "src/util-lang.js",
-          "src/util-log.js",
           "src/util-events.js",
           "src/util-path.js",
           "src/util-request.js",
@@ -31,7 +21,6 @@ module.exports = function(grunt) {
 
           "src/module.js",
           "src/config.js",
-          "src/bootstrap.js",
 
           "src/outro.js"
         ],
@@ -43,24 +32,20 @@ module.exports = function(grunt) {
       seajs: {
         src: "dist/sea-debug.js",
         dest: "dist/sea.js",
-        options: grunt.util._.merge({
+        options: {
           banner: "/*! Sea.js <%= pkg.version %> | seajs.org/LICENSE.md\n" +
-              "//@ sourceMappingURL=sea.js.map\n*/",
-          source_map_format: "V3",
-          create_source_map: "dist/sea.js.map"
-        }, GCC_OPTIONS)
-      },
+              "//# sourceMappingURL=sea.js.map\n*/",
 
-      plugins: {
-        files: grunt.file.expandMapping(
-            "src/plugins/*.js", "dist/",
-            {
-              "rename": function(dest, matchedSrcPath) {
-                return path.join(dest, matchedSrcPath.split("/").pop())
-              }
-            }
-        ),
-        options: GCC_OPTIONS
+          source_map_format: "V3",
+          create_source_map: "dist/sea.js.map",
+
+          compilation_level: "SIMPLE_OPTIMIZATIONS",
+          externs: "tools/extern.js",
+
+          warning_level: "VERBOSE",
+          jscomp_off: "checkTypes",
+          jscomp_error: "checkDebuggerStatement"
+        }
       }
     }
 
@@ -86,6 +71,22 @@ module.exports = function(grunt) {
     code = code.replace("dist/sea-debug.js", "sea-debug.js")
     grunt.file.write(mapfile, code)
     grunt.log.writeln('"' + mapfile + '" is fixed.')
+
+    /*
+    // No `$` variable in compressed code to avoiding conflicting
+    // when inline in velocity template.
+    var minfile = "dist/sea.js"
+
+    code = grunt.file.read(minfile)
+    code = code.replace('function $', 'function _')
+    code = code.replace('$=', '_=')
+    code = code.replace(/\$\./g, '_.')
+    code = code.replace(/\$&&/g, '_&&')
+    code = code.replace(/=\$/g, '=_')
+    code = code.replace(/\$\(/g, '_(')
+    grunt.file.write(minfile, code)
+    grunt.log.writeln('$ in "' + minfile + '" is fixed.')
+    */
   })
 
 
@@ -93,8 +94,6 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks("grunt-contrib-concat")
 
   grunt.registerTask("default", ["concat", "embed", "gcc:seajs", "fix"])
-  grunt.registerTask("plugins", ["gcc:plugins"])
-  grunt.registerTask("all", ["default", "plugins"])
 
 }
 
